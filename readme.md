@@ -2,6 +2,7 @@ Icecat
 ======
 [![Build Status](https://travis-ci.org/haringsrob/icecat.svg?branch=master)](https://travis-ci.org/haringsrob/icecat)
 [![Code Climate](https://codeclimate.com/github/haringsrob/icecat/badges/gpa.svg)](https://codeclimate.com/github/haringsrob/icecat)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fvinayshah%2Ficecat.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fvinayshah%2Ficecat?ref=badge_shield)
 
 Icecat is a PHP library, that assists you in the following 2 procedures:
 * Fetching data from the Icecat database using basic product information.
@@ -88,3 +89,7 @@ Integrations
 ============
 
 [Drupal module](https://www.drupal.org/project/icecat "Icecat Drupal") under active development.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fvinayshah%2Ficecat.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fvinayshah%2Ficecat?ref=badge_large)
