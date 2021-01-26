@@ -23,6 +23,14 @@ class Result implements ResultInterface
     private $images = [];
 
     /**
+     * The multimedia objects as an array.
+     *
+     * @var array
+     */
+    private $multimediaObjects = [];
+
+
+    /**
      * Icecat Constructor.
      *
      * @todo: validation.
@@ -87,7 +95,11 @@ class Result implements ResultInterface
      */
     public function getLongDescription()
     {
-        return $this->getProductData()->ProductDescription->{'@attributes'}->LongDesc;
+        if (!empty($this->getProductData()->ProductDescription->{'@attributes'})) {
+            return $this->getProductData()->ProductDescription->{'@attributes'}->LongDesc;
+        } else {
+            return '';
+        }
     }
 
     /**
@@ -97,7 +109,11 @@ class Result implements ResultInterface
      */
     public function getShortDescription()
     {
-        return $this->getProductData()->ProductDescription->{'@attributes'}->ShortDesc;
+        if (!empty($this->getProductData()->ProductDescription->{'@attributes'})) {
+            return $this->getProductData()->ProductDescription->{'@attributes'}->ShortDesc;
+        } else {
+            return '';
+        }
     }
 
     /**
@@ -153,14 +169,107 @@ class Result implements ResultInterface
      */
     private function productHasImageGallery()
     {
-        return !empty($this->getProductData()->ProductGallery);
+        return !empty($this->getProductData()->ProductGallery->ProductPicture);
     }
 
+    /**
+     * Checks if the product has a Main Image.
+     *
+     * @return bool
+     */
     private function productHasMainImage()
     {
         return !empty($this->getProductData()->{'@attributes'}->HighPic);
     }
+
+    /**
+     * Gets an array of multimedia Objects.
+     *
+     * @param string $objectType MultimediaObjectType (video/mp4|manual|360|leaflet)
+     *
+     * @return array
+     */
+    public function getMultimediaObjects($objectType = '')
+    {
+        if (empty($this->multimediaObjects)) {
+            if ($this->productHasMultimediaObject()) {
+                $productMultimediaObjects = $this->getProductData()->ProductMultimediaObject->MultimediaObject;
+                // Make sure $productMultimediaObjects is an array.
+                if (!is_array($productMultimediaObjects)){
+                        $productMultimediaObjects = [$productMultimediaObjects];
+                }
+                 foreach ($productMultimediaObjects as $productMultimediaObject) {
+                    $attr = $productMultimediaObject->{'@attributes'};
+                    $multimediaObject = [
+                        'contentType'  => $attr->ContentType,
+                        'description'  => $attr->Description,
+                        'size'         => (!empty($attr->Size) ? $attr->Size : 0),
+                        'url'          => (!empty($attr->URL) ? $attr->URL : ''),
+                     ];
+
+                    // retrieve 360 images?
+                    if ($attr->Type == '360') {
+                        $images360 = [];
+
+                        foreach ($productMultimediaObject->ImagesList360->Image as $image) {
+                            $attr360 = $image->{'@attributes'};
+                            $images360[(int) $attr360->No] = $attr360->Link;
+                        }
+                        $multimediaObject['image360'] = $images360;
+                    }
+
+                    $this->multimediaObjects[$attr->Type][] = $multimediaObject;
+                }
+            }
+        }
+        
+        if (empty($objectType)) {
+            return $this->multimediaObjects;
+        }
+        
+        return (isset($this->multimediaObjects[$objectType]) ? $this->multimediaObjects[$objectType] : []);
+    }
     
+    /**
+     * Gets an array of 360 images.
+     *
+     * @return array
+     */
+    public function get360imageArray()
+    {
+        return $this->getMultimediaObjects('360');
+    }
+    
+    /**
+     * Gets an array of manuals.
+     *
+     * @return array
+     */
+    public function getManuals()
+    {
+        return $this->getMultimediaObjects('manual');
+    }
+    
+    /**
+     * Gets an array of videos.
+     *
+     * @return array
+     */
+    public function getVideos()
+    {
+        return $this->getMultimediaObjects('video/mp4');
+    }
+
+    /**
+     * Checks if the product has multimedia objects.
+     *
+     * @return bool
+     */
+    private function productHasMultimediaObject()
+    {
+        return !empty($this->getProductData()->ProductMultimediaObject->MultimediaObject);
+    }
+
     /**
      * Checks if the product has Product Features.
      *
@@ -184,7 +293,7 @@ class Result implements ResultInterface
     {
         if ($this->productHasProductFeature()) {
             $productFeature = $this->getProductData()->ProductFeature;
-            
+
             // Make sure $productFeature is an array.
             if (!is_array($productFeature)) {
                 $productFeature = [$productFeature];
@@ -210,7 +319,7 @@ class Result implements ResultInterface
     {
         if ($this->productHasProductFeature()) {
             $productFeature = $this->getProductData()->ProductFeature;
-            
+
             // Make sure $productFeature is an array.
             if (!is_array($productFeature)) {
                 $productFeature = [$productFeature];
@@ -232,15 +341,16 @@ class Result implements ResultInterface
     public function getSpecs()
     {
         $specifications = [];
-        
+
         if ($this->productHasProductFeature()) {
             $productFeature = $this->getProductData()->ProductFeature;
-            
+
             // Make sure $productFeature is an array.
             if (!is_array($productFeature)) {
                 $productFeature = [$productFeature];
             }
             foreach ($productFeature as $key => $feature) {
+                $specifications[$key]['feature_id'] = $feature->Feature->{'@attributes'}->ID;
                 $specifications[$key]['name'] = $feature->Feature->Name->{'@attributes'}->Value;
                 $specifications[$key]['data'] = $feature->{'@attributes'}->Presentation_Value;
                 $specifications[$key]['spec_id'] = $feature->{'@attributes'}->CategoryFeature_ID;
